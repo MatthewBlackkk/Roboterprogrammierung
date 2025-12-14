@@ -71,6 +71,12 @@ class AStar(PlanerBase):
             self.w = config["w"]
             self.heuristic = config["heuristic"]
 
+            # Erweiterung für Kantenkollision -- Ludwig
+            # Erklärung: config.get(checkEdgeCollision,False) liest den Wert aus dem config-Dictionary aus.
+            # Falls er nicht vorhanden ist, wird standardmäßig False verwendet.
+            self.checkEdgeCollision = config.get("checkEdgeCollision", False)
+            # Ende Erweiterung für Kantenkollision -- Ludwig
+
             self.goal = checkedGoalList[0]
             self._addGraphNode(checkedStartList[0])
 
@@ -132,7 +138,7 @@ class AStar(PlanerBase):
         for i in range(self.dim):
           self.limits.append([lowLimit[i],highLimit[i]])
         return
-  
+    
     def _getBestNodeName(self):
         """ Returns the best name of best node """
         return heapq.heappop(self.openList)[1]
@@ -154,6 +160,16 @@ class AStar(PlanerBase):
                         continue
                     except:
                         pass
+
+                    # Erweiterung für Kantenkollision -- Ludwig
+                    # Erklärung: 
+                    # node["pos"] ist die aktuelle Position des Knotens, von dem aus wir neue Knoten generieren.
+                    # newPos ist die Position des neuen Nachbarknotens
+                    # lineInCollision überprüft, ob die Linie zwischen diesen beiden Punkten mit einem Hindernis kollidiert.
+                    if self.checkEdgeCollision:
+                        if self._collisionChecker.lineInCollision(node["pos"], newPos):
+                            continue
+                    # Ende Erweiterung für Kantenkollision -- Ludwig
 
                     self._addGraphNode(newPos,nodeName)
 
@@ -179,6 +195,12 @@ class AStar(PlanerBase):
                             continue
                         except:
                             pass
+                        
+                        # Erweiterung für Kantenkollision -- Ludwig
+                        if self.checkEdgeCollision:
+                            if self._collisionChecker.lineInCollision(node["pos"], newPos):
+                                continue
+                        # Ende Erweiterung für Kantenkollision -- Ludwig
 
                         self._addGraphNode(newPos,nodeName)
 
