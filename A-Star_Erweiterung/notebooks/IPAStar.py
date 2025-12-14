@@ -34,6 +34,11 @@ class AStar(PlanerBase):
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
+        self.num_steps=25
+        self.step_size=[]
+        for limit in self.limits:
+            self.step_size.append( (limit[1]-limit[0]) / self.num_steps )
+
         self.w = 0.5  
         return
 
@@ -42,7 +47,8 @@ class AStar(PlanerBase):
 
         nodeId = "-"
         for i in pos:
-            nodeId += str(i)+"-"
+            # Round to avoid float precision problems
+            nodeId += str(round(i, 4)) + "-"
         return nodeId
 
     @IPPerfMonitor
@@ -80,6 +86,8 @@ class AStar(PlanerBase):
             self.goal = checkedGoalList[0]
             self._addGraphNode(checkedStartList[0])
 
+            acceptance_radius = min(self.step_size) * 0.9
+
             currentBestName = self._getBestNodeName()
             breakNumber = 0
             while currentBestName:
@@ -90,7 +98,10 @@ class AStar(PlanerBase):
 
               currentBest = self.graph.nodes[currentBestName]
 
-              if currentBest["pos"] == self.goal:
+              dist_to_goal = euclidean(currentBest["pos"], self.goal)
+
+             #check whether goal reached but not with == because of float precision
+              if dist_to_goal < acceptance_radius:
                 self.solutionPath = []
                 self._collectPath( currentBestName, self.solutionPath )
                 self.goalFound = True
@@ -151,7 +162,7 @@ class AStar(PlanerBase):
         for i in range(len(node["pos"])):
             for u in [-1,1]:
                     newPos = copy.copy(node["pos"])
-                    newPos[i] += u
+                    newPos[i] += u*self.step_size[i]
                     if not self._inLimits(newPos):
                         continue
                     try:
@@ -185,8 +196,8 @@ class AStar(PlanerBase):
               for u in [-1,1]:
                   for v in [-1,0,1]:
                         newPos = copy.copy(node["pos"])
-                        newPos[i] += u
-                        newPos[j] += v
+                        newPos[i] += u*self.step_size[i]
+                        newPos[j] += v*self.step_size[j]
                         if not self._inLimits(newPos):
                             continue
                         try:
