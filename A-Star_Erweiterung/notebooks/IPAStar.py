@@ -173,14 +173,14 @@ class AStar(PlanerBase):
                         pass
 
                     # Erweiterung für Kantenkollision -- Ludwig
-                    # Erklärung: 
+                    # Erklärung :
                     # node["pos"] ist die aktuelle Position des Knotens, von dem aus wir neue Knoten generieren.
                     # newPos ist die Position des neuen Nachbarknotens
                     # lineInCollision überprüft, ob die Linie zwischen diesen beiden Punkten mit einem Hindernis kollidiert.
                     if self.checkEdgeCollision:
                         if self._collisionChecker.lineInCollision(node["pos"], newPos):
                             continue
-                    # Ende Erweiterung für Kantenkollision -- Ludwig
+                    # Ende Erweiterung für Kantenkollision -- Ludwig 
 
                     self._addGraphNode(newPos,nodeName)
 
