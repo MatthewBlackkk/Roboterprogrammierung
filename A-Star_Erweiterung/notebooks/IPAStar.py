@@ -86,7 +86,8 @@ class AStar(PlanerBase):
             self.goal = checkedGoalList[0]
             self._addGraphNode(checkedStartList[0])
 
-            acceptance_radius = min(self.step_size) * 0.9
+            #acceptance_radius = min(self.step_size) * 0.9
+            acceptance_radius = math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) ) * 1.1
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
