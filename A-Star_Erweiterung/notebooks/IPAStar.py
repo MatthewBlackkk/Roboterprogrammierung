@@ -34,7 +34,7 @@ class AStar(PlanerBase):
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
-        self.num_steps=25
+        self.num_steps=44
         self.step_size=[]
         for limit in self.limits:
             self.step_size.append( (limit[1]-limit[0]) / self.num_steps )
