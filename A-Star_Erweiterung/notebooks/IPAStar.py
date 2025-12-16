@@ -138,7 +138,10 @@ class AStar(PlanerBase):
 
         if fatherName != None:
             self.graph.add_edge(self._getNodeID(pos), fatherName)
-            self.graph.nodes[self._getNodeID(pos)]["g"] = self.graph.nodes[fatherName]["g"] + 1
+            #self.graph.nodes[self._getNodeID(pos)]["g"] = self.graph.nodes[fatherName]["g"] + 1
+            father_pos = self.graph.nodes[fatherName]["pos"]
+            dist = euclidean(father_pos, pos)
+            self.graph.nodes[self._getNodeID(pos)]["g"] = self.graph.nodes[fatherName]["g"] + dist
 
         self._insertNodeNameInOpenList(self._getNodeID(pos))
 
