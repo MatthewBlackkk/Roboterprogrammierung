@@ -95,7 +95,7 @@ class AStar(PlanerBase):
             currentBestName = self._getBestNodeName()
             breakNumber = 0
             while currentBestName:
-              if breakNumber > 1000:
+              if breakNumber > 10000:
                 break
 
               breakNumber += 1
