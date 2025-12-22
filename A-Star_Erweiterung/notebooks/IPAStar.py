@@ -86,7 +86,8 @@ class AStar(PlanerBase):
             self.goal = checkedGoalList[0]
             self._addGraphNode(checkedStartList[0])
 
-            acceptance_radius = min(self.step_size) * 1.1
+            #acceptance_radius = min(self.step_size) * 0.9
+            acceptance_radius = math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) ) * 1.1
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
@@ -137,7 +138,10 @@ class AStar(PlanerBase):
 
         if fatherName != None:
             self.graph.add_edge(self._getNodeID(pos), fatherName)
-            self.graph.nodes[self._getNodeID(pos)]["g"] = self.graph.nodes[fatherName]["g"] + 1
+            #self.graph.nodes[self._getNodeID(pos)]["g"] = self.graph.nodes[fatherName]["g"] + 1
+            father_pos = self.graph.nodes[fatherName]["pos"]
+            dist = euclidean(father_pos, pos)
+            self.graph.nodes[self._getNodeID(pos)]["g"] = self.graph.nodes[fatherName]["g"] + dist
 
         self._insertNodeNameInOpenList(self._getNodeID(pos))
 
