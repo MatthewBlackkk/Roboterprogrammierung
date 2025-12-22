@@ -34,11 +34,13 @@ class AStar(PlanerBase):
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
-        # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
-        self.num_steps=100
-        self.step_size=[]
-        for limit in self.limits:
-            self.step_size.append( (limit[1]-limit[0]) / self.num_steps )
+        self.num_steps=[44,44]
+        if len(self.num_steps) != self.dim:
+                raise ValueError(f"Erreur: num_steps must have {self.dim} values (one per dimension).")
+        else:
+            self.step_size=[]
+            for i, limit in enumerate(self.limits):
+                self.step_size.append( (limit[1]-limit[0]) / self.num_steps[i])
 
         self.w = 0.5  
         return
