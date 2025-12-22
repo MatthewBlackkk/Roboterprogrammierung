@@ -34,7 +34,8 @@ class AStar(PlanerBase):
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
-        self.num_steps=44
+        # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
+        self.num_steps=100
         self.step_size=[]
         for limit in self.limits:
             self.step_size.append( (limit[1]-limit[0]) / self.num_steps )
@@ -92,7 +93,7 @@ class AStar(PlanerBase):
             currentBestName = self._getBestNodeName()
             breakNumber = 0
             while currentBestName:
-              if breakNumber > 1000:
+              if breakNumber > 10000:
                 break
 
               breakNumber += 1
