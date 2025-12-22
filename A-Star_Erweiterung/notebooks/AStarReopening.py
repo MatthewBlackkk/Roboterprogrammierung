@@ -21,10 +21,10 @@ class ReopenAStar(AStar):
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
         # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
-        self.num_steps = [44,44]
+        self.num_steps = [44, 75]  # Unterschiedliche Diskretisierung für x und y
         self.step_size = []
-        for limit in self.limits:
-            self.step_size.append((limit[1] - limit[0]) / self.num_steps)
+        for i, limit in enumerate(self.limits):
+            self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
 
         self.w = 0.5
         return
