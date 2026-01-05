@@ -36,7 +36,7 @@ class AStar(PlanerBase):
 
         
         # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
-        self.num_steps=[44,44,44]
+        self.num_steps=[44,44]
         self.step_size=[]
         for i, limit in enumerate(self.limits):
             self.step_size.append( (limit[1]-limit[0]) / self.num_steps[i])
