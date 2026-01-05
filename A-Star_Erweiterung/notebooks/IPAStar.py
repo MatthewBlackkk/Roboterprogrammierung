@@ -34,13 +34,17 @@ class AStar(PlanerBase):
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
-        self.num_steps=25
+        
+        # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
+        self.num_steps=[44,44]
         self.step_size=[]
-        for limit in self.limits:
-            self.step_size.append( (limit[1]-limit[0]) / self.num_steps )
+        for i, limit in enumerate(self.limits):
+            self.step_size.append( (limit[1]-limit[0]) / self.num_steps[i])
 
         self.w = 0.5  
         return
+        
+
 
     def _getNodeID(self,pos):
         """Compute a unique identifier based on the position"""
@@ -92,7 +96,7 @@ class AStar(PlanerBase):
             currentBestName = self._getBestNodeName()
             breakNumber = 0
             while currentBestName:
-              if breakNumber > 1000:
+              if breakNumber > 10000:
                 break
 
               breakNumber += 1
