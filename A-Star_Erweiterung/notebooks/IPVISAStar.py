@@ -119,7 +119,11 @@ def aStarVisualizeWspace(planner, solution, ax = None, nodeSize = 100):
     collChecker.drawObstacles(ax) # Dessine les obstacles et le robot une fois
     
     pos = nx.get_node_attributes(graph,'pos')
-    pos2D = {key: (val[0], val[1]) for key in pos.keys()} # Projection 2D pour NetworkX
+    
+    # pos2D = {key: (val[0], val[1]) for key in pos.keys()}
+    # Ludwig abänderung für Rotation 
+    pos2D = {key: (val[0], val[1]) for key, val in pos.items()} # Projection 2D pour NetworkX
+    # Ludwig abänderung für Rotation 
     
     # Dessin du graphe (Correction pour DiGraph)
     Gcc = sorted(nx.weakly_connected_components(graph), key=len, reverse=True)

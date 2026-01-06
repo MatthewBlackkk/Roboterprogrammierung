@@ -33,14 +33,10 @@ class AStar(PlanerBase):
         self.goalFound = False
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
-
         
-        # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
-        self.num_steps=[44,44,44]
-        self.step_size=[]
-        for i, limit in enumerate(self.limits):
-            self.step_size.append( (limit[1]-limit[0]) / self.num_steps[i])
-
+        # num_steps und step_size werden in planPath basierend auf Config gesetzt
+        self.num_steps = None
+        self.step_size = None
         self.w = 0.5  
         return
         
@@ -81,6 +77,29 @@ class AStar(PlanerBase):
             self.w = config["w"]
             self.heuristic = config["heuristic"]
 
+            # Erweiterung für num_steps variabel -- Ludwig
+            # num_steps: Kann entweder eine Liste [n1, n2, n3, ...] für individuelle Dimensionen sein,
+            # oder ein einzelner Wert, der für alle Dimensionen verwendet wird.
+            # Standard: 44 für alle Dimensionen
+            num_dimensions = len(self.limits)
+            if "num_steps" in config:
+                if isinstance(config["num_steps"], list):
+                    if len(config["num_steps"]) != num_dimensions:
+                        raise ValueError(f"num_steps hat {len(config['num_steps'])} Elemente, aber Raum hat {num_dimensions} Dimensionen")
+                    self.num_steps = config["num_steps"]
+                else:
+                    # Einzelner Wert für alle Dimensionen
+                    self.num_steps = [config["num_steps"]] * num_dimensions
+            else:
+                # Default: 44 für alle Dimensionen
+                self.num_steps = [44] * num_dimensions
+            
+            # Berechne step_size für jede Dimension
+            self.step_size = []
+            for i, limit in enumerate(self.limits):
+                self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
+            # Ende Erweiterung für num_steps variabel -- Ludwig
+
             # Erweiterung für Kantenkollision -- Ludwig
             # Erklärung: config.get(checkEdgeCollision,False) liest den Wert aus dem config-Dictionary aus.
             # Falls er nicht vorhanden ist, wird standardmäßig False verwendet.
@@ -95,9 +114,21 @@ class AStar(PlanerBase):
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
+
+            # Ludwig vorgänger Version 
+            #while currentBestName:
+            #    if breakNumber > 10000:
+            #        break
+            # Ende 
+
+
+            # Test Ludwig: Höheres Limit für 3D: 100.000 statt 10.000
+            max_iterations = 100000
             while currentBestName:
-              if breakNumber > 10000:
+              if breakNumber > max_iterations:
+                print(f"A* Warnung: Max. Iterationen ({max_iterations}) erreicht. Graph hat {self.graph.number_of_nodes()} Knoten.")
                 break
+            # Ende Test Ludwig für 3D
 
               breakNumber += 1
 
