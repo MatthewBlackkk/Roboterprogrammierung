@@ -23,7 +23,7 @@ shape_robot = ShapeRobotWithOrientation(robot_shape, limits=[[0.0, 22.0,], [0.0,
 trapField = dict()
 trapField["obs1"] =   LineString([(6, 18), (6, 8), (16, 8), (16,18)]).buffer(1.0)
 description = "Following the direct connection from goal to start would lead the algorithm into a trap."
-benchList.append(Benchmark("Trap", CollisionCheckerShapeRobot(trapField, shape_robot), [[10,15,0]], [[10,1,math.pi/2]], description, 2))
+benchList.append(Benchmark("Trap", CollisionCheckerShapeRobot(trapField, shape_robot), [[10,15,0]], [[20,1,math.pi/2]], description, 2))
 
 # -----------------------------------------
 bottleNeckField = dict()
