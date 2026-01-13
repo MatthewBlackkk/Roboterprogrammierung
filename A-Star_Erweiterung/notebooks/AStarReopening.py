@@ -33,8 +33,11 @@ class ReopenAStar(AStar):
         return
     
     def _getNodeID(self, pos):
-        """ Surcharge cruciale : Utiliser des TUPLES pour la performance. """
-        return tuple(round(i, 4) for i in pos)
+        nodeId = "-"
+        for i in pos:
+            # Round to avoid float precision problems
+            nodeId += str(round(i, 4)) + "-"
+        return nodeId
     
     @IPPerfMonitor
     def planPath(self, startList, goalList, config):
