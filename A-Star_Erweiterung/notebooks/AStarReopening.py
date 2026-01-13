@@ -21,14 +21,21 @@ class ReopenAStar(AStar):
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
         # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
-        self.num_steps = [44, 75]  # Unterschiedliche Diskretisierung für x und y
-        self.step_size = []
-        for i, limit in enumerate(self.limits):
-            self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
+        #self.num_steps = [44, 75]  # Unterschiedliche Diskretisierung für x und y
+        #self.step_size = []
+        #for i, limit in enumerate(self.limits):
+        #    self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
+        
+        self.num_steps = None
+        self.step_size = None
 
         self.w = 0.5
         return
-
+    
+    def _getNodeID(self, pos):
+        """ Surcharge cruciale : Utiliser des TUPLES pour la performance. """
+        return tuple(round(i, 4) for i in pos)
+    
     @IPPerfMonitor
     def planPath(self, startList, goalList, config):
         """
@@ -55,6 +62,24 @@ class ReopenAStar(AStar):
             self.w = config["w"]
             self.heuristic = config["heuristic"]
 
+            num_dimensions = len(self.limits)
+            if "num_steps" in config:
+                if isinstance(config["num_steps"], list):
+                    if len(config["num_steps"]) != num_dimensions:
+                        raise ValueError(f"num_steps hat {len(config['num_steps'])} Elemente, aber Raum hat {num_dimensions} Dimensionen")
+                    self.num_steps = config["num_steps"]
+                else:
+                    # Einzelner Wert für alle Dimensionen
+                    self.num_steps = [config["num_steps"]] * num_dimensions
+            else:
+                # Default: 44 für alle Dimensionen
+                self.num_steps = [44] * num_dimensions
+
+            self.step_size = []
+            for i, limit in enumerate(self.limits):
+                self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
+            
+
             # Erweiterung für Kantenkollision -- Ludwig
             # Erklärung: config.get(checkEdgeCollision,False) liest den Wert aus dem config-Dictionary aus.
             # Falls er nicht vorhanden ist, wird standardmäßig False verwendet.
@@ -69,8 +94,10 @@ class ReopenAStar(AStar):
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
+            max_iterations = 10000
             while currentBestName:
-                if breakNumber > 10000:
+                if breakNumber > max_iterations:
+                    print(f"A* Warnung: Max. Iterationen ({max_iterations}) erreicht. Graph hat {self.graph.number_of_nodes()} Knoten.")
                     break
 
                 breakNumber += 1
@@ -174,6 +201,8 @@ class ReopenAStar(AStar):
             for j in range(len(pos)):
                 for u in [-1, 1]:
                     for v in [-1, 0, 1]:
+                        if i == j and v == 0: continue
+
                         newPos = copy.copy(pos)
                         newPos[i] += u * self.step_size[i]
                         newPos[j] += v * self.step_size[j]
