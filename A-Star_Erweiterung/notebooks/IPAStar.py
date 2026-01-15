@@ -68,6 +68,9 @@ class AStar(PlanerBase):
         """
         # 0. reset
         self.graph.clear()
+        self.openList = []      # Vide la liste des nœuds à explorer
+        self.goalFound = False  # REMISE À ZÉRO INDISPENSABLE
+        self.solutionPath = []
 
         try:
             # 1. check start and goal whether collision free (s. BaseClass)
@@ -110,7 +113,8 @@ class AStar(PlanerBase):
             self._addGraphNode(checkedStartList[0])
 
             #acceptance_radius = min(self.step_size) * 0.9
-            acceptance_radius = math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) ) * 1.1
+            diag= math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) )
+            acceptance_radius = diag * 1.1
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
@@ -138,10 +142,16 @@ class AStar(PlanerBase):
 
              #check whether goal reached but not with == because of float precision
               if dist_to_goal < acceptance_radius:
-                self.solutionPath = []
-                self._collectPath( currentBestName, self.solutionPath )
-                self.goalFound = True
-                break
+                  if not self._collisionChecker.lineInCollision(currentBest["pos"], self.goal):
+                    self.solutionPath = []
+                    self._collectPath( currentBestName, self.solutionPath )
+                    self.goalFound = True
+                    break
+                  else:
+                    new_radius = diag * 2
+                    if new_radius > acceptance_radius:
+                        acceptance_radius = new_radius
+                  
 
               currentBest["status"]= 'closed'
               if self._collisionChecker.pointInCollision(currentBest["pos"]):
