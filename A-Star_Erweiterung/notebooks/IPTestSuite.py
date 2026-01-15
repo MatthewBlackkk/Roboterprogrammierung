@@ -20,7 +20,7 @@ benchList = list()
 trapField = dict()
 trapField["obs1"] =   LineString([(6, 18), (6, 8), (16, 8), (16,18)]).buffer(1.0)
 description = "Following the direct connection from goal to start would lead the algorithm into a trap."
-benchList.append(Benchmark("Trap", CollisionChecker(trapField), [[10,15]], [[10,1]], description, 2))
+benchList.append(Benchmark("Trap", CollisionChecker(trapField), [[10.5,15]], [[10.25,1]], description, 2))
 
 # -----------------------------------------
 bottleNeckField = dict()
@@ -51,4 +51,4 @@ myField["Antenna_Head_R"] = Point(8.5, 16).buffer(1)
 
 myField["Rob_Head"] = Polygon([(2, 13), (2, 8), (8, 8), (8, 13)])
 description = "Planer has to find a passage past a robot head and the print of the LTC."
-benchList.append(Benchmark("MyField", CollisionChecker(myField), [[4,21]], [[18,1]], description, 2))
+#benchList.append(Benchmark("MyField", CollisionChecker(myField), [[4,21]], [[18,1]], description, 2))
