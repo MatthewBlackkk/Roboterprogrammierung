@@ -50,6 +50,14 @@ class AStar(PlanerBase):
             # Round to avoid float precision problems
             nodeId += str(round(i, 4)) + "-"
         return nodeId
+    
+    def _getinGrid(self,pos):
+        newpos=[]
+        for i, val in enumerate(pos):
+            num_of_steps = round( (val - self.limits[i][0]) / self.step_size[i] )
+            newval = self.limits[i][0] + num_of_steps * self.step_size[i]
+            newpos.append(newval)
+        return newpos
 
     @IPPerfMonitor
     def planPath(self, startList, goalList, config):
@@ -100,7 +108,7 @@ class AStar(PlanerBase):
             # Berechne step_size für jede Dimension
             self.step_size = []
             for i, limit in enumerate(self.limits):
-                self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
+                self.step_size.append(round((limit[1] - limit[0]) / self.num_steps[i], 4))
             # Ende Erweiterung für num_steps variabel -- Ludwig
 
             # Erweiterung für Kantenkollision -- Ludwig
@@ -109,12 +117,46 @@ class AStar(PlanerBase):
             self.checkEdgeCollision = config.get("checkEdgeCollision", False)
             # Ende Erweiterung für Kantenkollision -- Ludwig
 
+            self.start = checkedStartList[0]
             self.goal = checkedGoalList[0]
-            self._addGraphNode(checkedStartList[0])
+            #self._addGraphNode(checkedStartList[0])
+
+            grid_start = self._getinGrid(self.start)
+
+            grid_goal  = self._getinGrid(self.goal)
+            grid_goalID = self._getNodeID(grid_goal)
+
+                        # Check connection: Real Start -> Grid Start
+            if self._collisionChecker.lineInCollision(self.start, grid_start):
+                print("Error: Cannot connect Start Position to the Grid!")
+                return None
+            
+            # Check connection: Grid Goal -> Real Goal
+            if self._collisionChecker.lineInCollision(grid_goal, self.goal):
+                print("Error: Cannot connect Grid Goal to the Goal Position!")
+                return None
+
+            dist_start = euclidean(self.start, grid_start)
+            epsilon = 1e-3
+
+            if dist_start > epsilon:
+                # CAS 1 : On est éloigné de la grille
+                # a. On ajoute le vrai Start au graphe MANUELLEMENT (sans le mettre dans l'openList)
+                #    Cela évite que A* essaie d'explorer les voisins du vrai Start (qui seraient hors grille)
+                RealstartID = self._getNodeID(self.start)
+                self.graph.add_node(RealstartID, pos=self.start, status='closed', g=0)
+                
+                # b. On démarre A* sur le point de Grille, avec le vrai Start comme PÈRE
+                self._addGraphNode(grid_start, RealstartID)
+            else:
+                # CAS 2 : On est déjà sur la grille (ou très proche)
+                # On démarre directement A* sur le point de grille
+                self._addGraphNode(grid_start)
+            
 
             #acceptance_radius = min(self.step_size) * 0.9
-            diag= math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) )
-            acceptance_radius = diag * 1.1
+            #diag= math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) )
+            #acceptance_radius = diag * 1.1
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
@@ -138,20 +180,42 @@ class AStar(PlanerBase):
 
               currentBest = self.graph.nodes[currentBestName]
 
-              dist_to_goal = euclidean(currentBest["pos"], self.goal)
+              #dist_to_goal = euclidean(currentBest["pos"], self.goal)
 
              #check whether goal reached but not with == because of float precision
-              if dist_to_goal < acceptance_radius:
-                  if not self._collisionChecker.lineInCollision(currentBest["pos"], self.goal):
-                    self.solutionPath = []
-                    self._collectPath( currentBestName, self.solutionPath )
-                    self.goalFound = True
-                    break
-                  else:
-                    new_radius = diag * 2
-                    if new_radius > acceptance_radius:
-                        acceptance_radius = new_radius
-                  
+              #if dist_to_goal < acceptance_radius:
+              #    if not self._collisionChecker.lineInCollision(currentBest["pos"], self.goal):
+              #      self.solutionPath = []
+              #      self._collectPath( currentBestName, self.solutionPath )
+              #      self.goalFound = True
+              #      break
+              #    else:
+              #      new_radius = diag * 2
+              #      if new_radius > acceptance_radius:
+              #          acceptance_radius = new_radius
+
+              if currentBestName == grid_goalID:
+                dist_goal = euclidean(self.goal, grid_goal)
+
+                finalNodeName = currentBestName # Par défaut, c'est la grille
+
+                if dist_goal > epsilon:
+                    # Si le vrai Goal est éloigné, on l'ajoute au graphe maintenant
+                    realGoalID = self._getNodeID(self.goal)
+                        
+                    # On l'ajoute avec le point de grille comme PÈRE
+                    # Calcul du coût g final
+                    g_final = currentBest["g"] + dist_goal
+                    self.graph.add_node(realGoalID, pos=self.goal, status='closed', g=g_final)
+                    self.graph.add_edge(realGoalID, currentBestName) # L'arête remonte vers le père
+                        
+                    finalNodeName = realGoalID
+
+                self.solutionPath = []
+                self._collectPath( finalNodeName, self.solutionPath )
+
+                self.goalFound = True
+                break
 
               currentBest["status"]= 'closed'
               if self._collisionChecker.pointInCollision(currentBest["pos"]):
@@ -179,7 +243,10 @@ class AStar(PlanerBase):
     @IPPerfMonitor
     def _addGraphNode(self, pos, fatherName=None):
         """Add a node based on the position into the graph. Attention: Existing node is overwritten!"""
-        self.graph.add_node(self._getNodeID(pos), pos=pos, status='open', g=0)
+        node_id = self._getNodeID(pos)
+
+        if node_id not in self.graph.nodes:
+            self.graph.add_node(node_id, pos=pos, status='open', g=0)
 
         if fatherName != None:
             self.graph.add_edge(self._getNodeID(pos), fatherName)
