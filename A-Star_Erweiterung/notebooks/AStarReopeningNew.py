@@ -2,7 +2,6 @@
 import copy
 import heapq
 import networkx as nx
-import math
 from IPAStar import AStar
 from scipy.spatial.distance import euclidean
 from IPPerfMonitor import IPPerfMonitor
@@ -18,30 +17,18 @@ class ReopenAStar(AStar):
         self.graph = nx.DiGraph()  # = CloseList
         self.openList = []  # (<value>, <node>)
 
+        self.start = []
         self.goal = []
         self.goalFound = False
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
 
-        # Bei hochsetzen der stepsize muss entsprechend die break number angepasst werden
-        #self.num_steps = [44, 75]  # Unterschiedliche Diskretisierung für x und y
-        #self.step_size = []
-        #for i, limit in enumerate(self.limits):
-        #    self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
-        
         self.num_steps = None
         self.step_size = None
         self.allowReopening = False
 
         self.w = 0.5
         return
-    
-    def _getNodeID(self, pos):
-        nodeId = "-"
-        for i in pos:
-            # Round to avoid float precision problems
-            nodeId += str(round(i, 4)) + "-"
-        return nodeId
     
     def _getBestNodeName(self):
         """Returns the best node name, skipping stale entries when reopening is active"""
@@ -69,18 +56,22 @@ class ReopenAStar(AStar):
         """
 
         Args:
-            start (array): start position in planning space
-            goal (array) : goal position in planning space
+            startList (list): list of start positions in planning space
+            goalList (list): list of goal positions in planning space
             config (dict): dictionary with the needed information about the configuration options
 
         Example:
 
             config["w"] = 0.5
-            config["heuristic"] = "euclid"
+            config["heuristic"] = "euclidean"
+            config["allowReopening"] = True
 
         """
         # 0. reset
         self.graph.clear()
+        self.openList = []
+        self.goalFound = False
+        self.solutionPath = []
 
         try:
             # 1. check start and goal whether collision free (s. BaseClass)
@@ -106,20 +97,43 @@ class ReopenAStar(AStar):
 
             self.step_size = []
             for i, limit in enumerate(self.limits):
-                self.step_size.append((limit[1] - limit[0]) / self.num_steps[i])
-            
+                self.step_size.append(round((limit[1] - limit[0]) / self.num_steps[i], 4))
 
             # Erweiterung für Kantenkollision -- Ludwig
-            # Erklärung: config.get(checkEdgeCollision,False) liest den Wert aus dem config-Dictionary aus.
-            # Falls er nicht vorhanden ist, wird standardmäßig False verwendet.
             self.checkEdgeCollision = config.get("checkEdgeCollision", False)
             # Ende Erweiterung für Kantenkollision -- Ludwig
 
+            self.start = checkedStartList[0]
             self.goal = checkedGoalList[0]
-            self._addGraphNode(checkedStartList[0])
 
-            # acceptance_radius = min(self.step_size) * 0.9
-            acceptance_radius = math.sqrt(sum([(s / 2.0) ** 2 for s in self.step_size])) * 1.1
+            grid_start = self._getinGrid(self.start)
+            grid_goal = self._getinGrid(self.goal)
+            grid_goalID = self._getNodeID(grid_goal)
+
+            # Check connection: Real Start -> Grid Start
+            if self._collisionChecker.lineInCollision(self.start, grid_start):
+                print("Error: Cannot connect Start Position to the Grid!")
+                return None
+
+            # Check connection: Grid Goal -> Real Goal
+            if self._collisionChecker.lineInCollision(grid_goal, self.goal):
+                print("Error: Cannot connect Grid Goal to the Goal Position!")
+                return None
+
+            dist_start = euclidean(self.start, grid_start)
+            epsilon = 1e-3
+
+            if dist_start > epsilon:
+                # CAS 1 : We are away from the grid
+                # Add the real Start to the graph MANUALLY (without putting it in openList)
+                RealstartID = self._getNodeID(self.start)
+                self.graph.add_node(RealstartID, pos=self.start, status='closed', g=0)
+
+                # Start A* on the grid point, with the real Start as PARENT
+                self._addGraphNode(grid_start, RealstartID)
+            else:
+                # CAS 2 : We are already on the grid (or very close)
+                self._addGraphNode(grid_start)
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
@@ -134,12 +148,25 @@ class ReopenAStar(AStar):
 
                 currentBest = self.graph.nodes[currentBestName]
 
-                dist_to_goal = euclidean(currentBest["pos"], self.goal)
+                # Check if we reached the grid goal
+                if currentBestName == grid_goalID:
+                    dist_goal = euclidean(self.goal, grid_goal)
 
-                # check whether goal reached but not with == because of float precision
-                if dist_to_goal < acceptance_radius:
+                    finalNodeName = currentBestName  # Default: grid point
+
+                    if dist_goal > epsilon:
+                        # If real Goal is far away, add it to graph now
+                        realGoalID = self._getNodeID(self.goal)
+
+                        # Add it with grid point as PARENT
+                        g_final = currentBest["g"] + dist_goal
+                        self.graph.add_node(realGoalID, pos=self.goal, status='closed', g=g_final)
+                        self.graph.add_edge(realGoalID, currentBestName)
+
+                        finalNodeName = realGoalID
+
                     self.solutionPath = []
-                    self._collectPath(currentBestName, self.solutionPath)
+                    self._collectPath(finalNodeName, self.solutionPath)
                     self.goalFound = True
                     break
 
@@ -158,8 +185,8 @@ class ReopenAStar(AStar):
                 return self.solutionPath
             else:
                 return None
-        except Exception:
-            print("Planning failed")
+        except Exception as e:
+            print(f"Planning failed: {e}")
             return None
 
     @IPPerfMonitor
