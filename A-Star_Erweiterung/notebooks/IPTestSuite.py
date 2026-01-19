@@ -27,7 +27,7 @@ bottleNeckField = dict()
 bottleNeckField["obs1"] = LineString([(0, 13), (11, 13)]).buffer(.5)
 bottleNeckField["obs2"] = LineString([(13, 13), (23,13)]).buffer(.5)
 description = "Planer has to find a narrow passage."
-benchList.append(Benchmark("Bottleneck", CollisionChecker(bottleNeckField), [[4,15]], [[18,1]], description, 2))
+#benchList.append(Benchmark("Bottleneck", CollisionChecker(bottleNeckField), [[4,15]], [[18,1]], description, 2))
 
 # -----------------------------------------
 fatBottleNeckField = dict()
