@@ -247,3 +247,64 @@ class ReopenAStar(AStar):
 
         return []
 
+    # wird aktuell nicht verwendet
+    @IPPerfMonitor
+    def _handleNode9(self, nodeName):
+        """Generates possible successor positions also in diagonal direction with reopening support"""
+        node = self.graph.nodes[nodeName]
+        for i in range(len(node["pos"])):
+            for j in range(len(node["pos"])):
+                for u in [-1, 1]:
+                    for v in [-1, 0, 1]:
+                        newPos = copy.copy(node["pos"])
+                        newPos[i] += u * self.step_size[i]
+                        newPos[j] += v * self.step_size[j]
+
+                        # Check if position is within limits
+                        if not self._inLimits(newPos):
+                            continue
+
+                        # Edge collision check
+                        if self.checkEdgeCollision:
+                            if self._collisionChecker.lineInCollision(node["pos"], newPos):
+                                continue
+
+                        newNodeID = self._getNodeID(newPos)
+                        newG = node["g"] + euclidean(node["pos"], newPos)
+
+                        # Case 1: Node doesn't exist yet - create it
+                        if newNodeID not in self.graph:
+                            self._addGraphNode(newPos, nodeName)
+                            continue
+
+                        # Case 2: Node exists - check if we should update it (reopening)
+                        existingNode = self.graph.nodes[newNodeID]
+
+                        # If reopening is disabled and node exists, skip it (standard A* behavior)
+                        if not self.allowReopening:
+                            continue
+
+                        # If reopening is enabled, check if we found a better path
+                        if newG < existingNode["g"]:
+                            # Update the node with better cost
+                            self.graph.nodes[newNodeID]["g"] = newG
+
+                            # Remove old parent edge(s) and add new one
+                            # Graph structure: child -> parent (stored as successor)
+                            oldParents = list(self.graph.successors(newNodeID))
+                            if oldParents:
+                                self.graph.remove_edges_from([(newNodeID, p) for p in oldParents])
+
+                            # Add new parent edge: child -> parent
+                            self.graph.add_edge(newNodeID, nodeName)
+
+                            # Reopen the node if it was closed
+                            if existingNode.get("status") == "closed":
+                                self.graph.nodes[newNodeID]["status"] = 'open'
+                                self._insertNodeNameInOpenList(newNodeID)
+                            # If it's already open, add it again to heap with better f-value
+                            # (the old entry will be filtered out by _getBestNodeName)
+                            elif existingNode.get("status") == "open":
+                                self._insertNodeNameInOpenList(newNodeID)
+
+        return []
