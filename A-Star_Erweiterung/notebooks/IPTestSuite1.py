@@ -27,14 +27,14 @@ bottleNeckField = dict()
 bottleNeckField["obs1"] = LineString([(0, 13), (11, 13)]).buffer(.5)
 bottleNeckField["obs2"] = LineString([(13, 13), (23,13)]).buffer(.5)
 description = "Planer has to find a narrow passage."
-#benchList.append(Benchmark("Bottleneck", CollisionChecker(bottleNeckField), [[4,15]], [[18,1]], description, 2))
+benchList.append(Benchmark("Bottleneck", CollisionChecker(bottleNeckField), [[4,15]], [[18,1]], description, 2))
 
 # -----------------------------------------
 fatBottleNeckField = dict()
 fatBottleNeckField["obs1"] = Polygon([(0, 8), (11, 8),(11, 15), (0, 15)]).buffer(.5)
 fatBottleNeckField["obs2"] = Polygon([(13, 8), (24, 8),(24, 15), (13, 15)]).buffer(.5)
 description = "Planer has to find a narrow passage with a significant extend."
-benchList.append(Benchmark("Fat bottleneck", CollisionChecker(fatBottleNeckField), [[4,21]], [[18,1]], description, 2))
+#benchList.append(Benchmark("Fat bottleneck", CollisionChecker(fatBottleNeckField), [[4,21]], [[18,1]], description, 2))
 
 # -----------------------------------------
 
