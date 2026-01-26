@@ -76,8 +76,8 @@ class AStar(PlanerBase):
         """
         # 0. reset
         self.graph.clear()
-        self.openList = []      # Vide la liste des nœuds à explorer
-        self.goalFound = False  # REMISE À ZÉRO INDISPENSABLE
+        self.openList = []      
+        self.goalFound = False  
         self.solutionPath = []
 
         try:
@@ -109,13 +109,13 @@ class AStar(PlanerBase):
             self.step_size = []
             for i, limit in enumerate(self.limits):
                 self.step_size.append(round((limit[1] - limit[0]) / self.num_steps[i], 4))
-            # Ende Erweiterung für num_steps variabel -- Ludwig
+            # Ende Erweiterung für num_steps variabel 
 
-            # Erweiterung für Kantenkollision -- Ludwig
+            # Erweiterung für Kantenkollision 
             # Erklärung: config.get(checkEdgeCollision,False) liest den Wert aus dem config-Dictionary aus.
             # Falls er nicht vorhanden ist, wird standardmäßig False verwendet.
             self.checkEdgeCollision = config.get("checkEdgeCollision", False)
-            # Ende Erweiterung für Kantenkollision -- Ludwig
+            # Ende Erweiterung für Kantenkollision 
 
             self.start = checkedStartList[0]
             self.goal = checkedGoalList[0]
@@ -140,74 +140,43 @@ class AStar(PlanerBase):
             epsilon = 1e-3
 
             if dist_start > epsilon:
-                # CAS 1 : On est éloigné de la grille
-                # a. On ajoute le vrai Start au graphe MANUELLEMENT (sans le mettre dans l'openList)
-                #    Cela évite que A* essaie d'explorer les voisins du vrai Start (qui seraient hors grille)
                 RealstartID = self._getNodeID(self.start)
                 self.graph.add_node(RealstartID, pos=self.start, status='closed', g=0)
                 
-                # b. On démarre A* sur le point de Grille, avec le vrai Start comme PÈRE
                 self._addGraphNode(grid_start, RealstartID)
             else:
-                # CAS 2 : On est déjà sur la grille (ou très proche)
-                # On démarre directement A* sur le point de grille
                 self._addGraphNode(grid_start)
             
 
-            #acceptance_radius = min(self.step_size) * 0.9
-            #diag= math.sqrt( sum( [ (s/2.0)**2 for s in self.step_size] ) )
-            #acceptance_radius = diag * 1.1
 
             currentBestName = self._getBestNodeName()
             breakNumber = 0
 
-            # Ludwig vorgänger Version 
-            #while currentBestName:
-            #    if breakNumber > 10000:
-            #        break
-            # Ende 
 
-
-            # Test Ludwig: Höheres Limit für 3D: 100.000 statt 10.000
             max_iterations = 100000
             while currentBestName:
               if breakNumber > max_iterations:
                 print(f"A* Warnung: Max. Iterationen ({max_iterations}) erreicht. Graph hat {self.graph.number_of_nodes()} Knoten.")
                 break
-            # Ende Test Ludwig für 3D
 
               breakNumber += 1
 
               currentBest = self.graph.nodes[currentBestName]
 
-              #dist_to_goal = euclidean(currentBest["pos"], self.goal)
-
-             #check whether goal reached but not with == because of float precision
-              #if dist_to_goal < acceptance_radius:
-              #    if not self._collisionChecker.lineInCollision(currentBest["pos"], self.goal):
-              #      self.solutionPath = []
-              #      self._collectPath( currentBestName, self.solutionPath )
-              #      self.goalFound = True
-              #      break
-              #    else:
-              #      new_radius = diag * 2
-              #      if new_radius > acceptance_radius:
-              #          acceptance_radius = new_radius
 
               if currentBestName == grid_goalID:
                 dist_goal = euclidean(self.goal, grid_goal)
 
-                finalNodeName = currentBestName # Par défaut, c'est la grille
+                finalNodeName = currentBestName 
 
                 if dist_goal > epsilon:
-                    # Si le vrai Goal est éloigné, on l'ajoute au graphe maintenant
+
                     realGoalID = self._getNodeID(self.goal)
                         
-                    # On l'ajoute avec le point de grille comme PÈRE
-                    # Calcul du coût g final
+                  
                     g_final = currentBest["g"] + dist_goal
                     self.graph.add_node(realGoalID, pos=self.goal, status='closed', g=g_final)
-                    self.graph.add_edge(realGoalID, currentBestName) # L'arête remonte vers le père
+                    self.graph.add_edge(realGoalID, currentBestName) 
                         
                     finalNodeName = realGoalID
 
